@@ -594,11 +594,79 @@ def test_softmax(n_epochs=250):
         ax2.set_title('blue: true class, grayscale: probs assigned by model')
 
 
+import sys
+import training_data
+def test_img():
+
+    n_hidden = 64
+    n_in = 4*4
+    n_out = 16*16
+    n_steps = 16
+    n_seq = 800
+    n_tests = n_seq/4
+
+    seq     = np.array(training_data.train_inputs [0:n_seq])
+    targets = np.array(training_data.train_outputs[0:n_seq])
+
+    test_inputs  = np.array(training_data.test_inputs [0:n_tests])
+    test_outputs = np.array(training_data.test_outputs[0:n_tests])
+
+    model = MetaRNN(n_in=n_in, n_hidden=n_hidden, n_out=n_out,
+                    learning_rate=0.1, learning_rate_decay=0.99,
+                    n_epochs=240, activation='tanh')
+
+    if len(sys.argv) == 2:
+        model.load(sys.argv[1])
+    model.fit(seq, targets, X_test=test_inputs, Y_test=test_outputs, validation_frequency=10*n_seq)
+
+    model.save()
+
+    plt.close('all')
+    fig = plt.figure()
+    ax1 = plt.subplot(211)
+    plt.plot(seq[0])
+    ax1.set_title('input')
+
+    ax2 = plt.subplot(212)
+    true_targets = plt.plot(targets[0])
+
+    guess = model.predict(seq[0])
+    guessed_targets = plt.plot(guess, linestyle='--')
+    for i, x in enumerate(guessed_targets):
+        x.set_color(true_targets[i].get_color())
+    ax2.set_title('solid: true output, dashed: model output')
+
+
+    plt.savefig("plot_img.png")
+
+    # use all data
+    seq = np.array(training_data.train_inputs)
+    for i in range(len(training_data.train_outputs)):
+        from PIL import Image
+
+        guess = model.predict(seq[i].astype(np.float32))
+        pixels = [max(0, min(255, int((x+0.5)*255))) for x in guess[-1]]
+        im = Image.new("L", (16, 16))
+        im.putdata(pixels)
+        im.save("out/test_%d_out.png" % i)
+    seq = np.array(training_data.test_inputs)
+    for i in range(len(training_data.test_outputs)):
+        from PIL import Image
+
+        guess = model.predict(seq[i].astype(np.float32))
+        pixels = [max(0, min(255, int((x+0.5)*255))) for x in guess[-1]]
+        im = Image.new("L", (16, 16))
+        im.putdata(pixels)
+        im.save("out/test_%d_out.png" % (i+len(training_data.train_outputs)))
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     t0 = time.time()
-    test_real()
+    test_img()
+    #test_real()
     # problem takes more epochs to solve
     #test_binary(multiple_out=True, n_epochs=2400)
     #test_softmax(n_epochs=250)
     print "Elapsed time: %f" % (time.time() - t0)
+
