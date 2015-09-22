@@ -270,7 +270,7 @@ class MetaRNN(BaseEstimator):
 
     def __getstate__(self):
         """ Return state sequence."""
-        params = self._get_params()  # parameters set in constructor
+        params = self.get_params()  # parameters set in constructor
         weights = [p.get_value() for p in self.rnn.params]
         state = (params, weights)
         return state
